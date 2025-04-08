@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chain Reaction Game</title>
-  <h1 id="turnDisplay">---</h1>
   <style>
     body {
       font-family: sans-serif;
@@ -15,9 +14,7 @@
       background: #1e1e1e;
       color: white;
     }
-    h1 {
-      margin-top: 20px;
-    }
+
     #game-board {
       display: grid;
       grid-template-columns: repeat(6, 60px);
@@ -50,6 +47,16 @@
     .player2 .orb {
       background-color: cyan;
     }
+    #turnDisplay{
+        color: red;
+        font-size: large;
+        margin-top: 0;
+        padding-top: 0;
+    }
+    title {
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
     @keyframes pop {
       from { transform: scale(0.5); }
       to { transform: scale(1); }
@@ -58,6 +65,7 @@
 </head>
 <body>
   <h1>Chain Reaction Game</h1>
+  <h2 id="turnDisplay">Red</h2>
   <div id="game-board"></div>
   <script>
     const rows = 9;
@@ -149,8 +157,10 @@
 
     function switchPlayer() {
       currentPlayer = currentPlayer === 1 ? 2 : 1;
-      const trunDisp = document.getElementById('turnDisplay')
-      
+      const trunDisp = document.getElementById('turnDisplay');
+      trunDisp.textContent = currentPlayer == 1 ? 'Red' : 'Blue';
+      trunDisp.style.color = currentPlayer == 1 ? 'red': 'cyan';
+
     }
 
     createBoard();
