@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chain Reaction Game</title>
+  <h1 id="turnDisplay">---</h1>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #1e1e1e;
+      color: white;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    #game-board {
+      display: grid;
+      grid-template-columns: repeat(6, 60px);
+      grid-template-rows: repeat(9, 60px);
+      gap: 2px;
+      margin: 20px;
+    }
+    .cell {
+      width: 60px;
+      height: 60px;
+      background: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      position: relative;
+    }
+    .orb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: red;
+      margin: 2px;
+      animation: pop 0.3s;
+    }
+    .player1 .orb {
+      background-color: red;
+    }
+    .player2 .orb {
+      background-color: cyan;
+    }
+    @keyframes pop {
+      from { transform: scale(0.5); }
+      to { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Chain Reaction Game</h1>
+  <div id="game-board"></div>
+  <script>
+    const rows = 9;
+    const cols = 6;
+    const board = [];
+    const gameBoard = document.getElementById("game-board");
+    let currentPlayer = 1;
+
+    function createBoard() {
+      for (let r = 0; r < rows; r++) {
+        board[r] = [];
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+          cell.dataset.owner = 0;
+          cell.dataset.count = 0;
+          cell.addEventListener("click", handleClick);
+          gameBoard.appendChild(cell);
+          board[r][c] = cell;
+        }
+      }
+    }
+
+    function handleClick(e) {
+      const cell = e.currentTarget;
+      const r = parseInt(cell.dataset.row);
+      const c = parseInt(cell.dataset.col);
+      const owner = parseInt(cell.dataset.owner);
+
+      if (owner !== 0 && owner !== currentPlayer) return;
+
+      addOrb(r, c, currentPlayer);
+      switchPlayer();
+    }
+
+    function addOrb(r, c, player) {
+      const cell = board[r][c];
+      let count = parseInt(cell.dataset.count);
+      cell.dataset.count = ++count;
+      cell.dataset.owner = player;
+      renderCell(cell, count, player);
+
+      const limit = getLimit(r, c);
+      if (count >= limit) {
+        explode(r, c, player);
+      }
+    }
+
+    function explode(r, c, player) {
+      const cell = board[r][c];
+      cell.dataset.count = 0;
+      cell.dataset.owner = 0;
+      renderCell(cell, 0, 0);
+
+      const neighbors = [
+        [r - 1, c],
+        [r + 1, c],
+        [r, c - 1],
+        [r, c + 1]
+      ];
+
+      neighbors.forEach(([nr, nc]) => {
+        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+          addOrb(nr, nc, player);
+        }
+      });
+    }
+
+    function renderCell(cell, count, player) {
+      cell.innerHTML = "";
+      cell.classList.remove("player1", "player2");
+      if (player === 1) cell.classList.add("player1");
+      if (player === 2) cell.classList.add("player2");
+      for (let i = 0; i < count; i++) {
+        const orb = document.createElement("div");
+        orb.classList.add("orb");
+        cell.appendChild(orb);
+      }
+    }
+
+    function getLimit(r, c) {
+      let limit = 4;
+      if (r === 0 || r === rows - 1) limit--;
+      if (c === 0 || c === cols - 1) limit--;
+      return limit;
+    }
+
+    function switchPlayer() {
+      currentPlayer = currentPlayer === 1 ? 2 : 1;
+      const trunDisp = document.getElementById('turnDisplay')
+      
+    }
+
+    createBoard();
+  </script>
+</body>
+</html>

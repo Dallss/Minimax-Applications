@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Connect 4</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+    }
+
+    h1 {
+      margin-top: 20px;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(7, 70px);
+      grid-template-rows: repeat(6, 70px);
+      gap: 5px;
+      margin: 30px auto;
+      width: max-content;
+      background: #004080;
+      padding: 5px;
+      border-radius: 10px;
+    }
+
+    .cell {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background-color: white;
+      cursor: pointer;
+    }
+
+    .red {
+      background-color: red;
+    }
+
+    .yellow {
+      background-color: yellow;
+    }
+
+    #status {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Connect 4</h1>
+  <div id="status">Red's Turn</div>
+  <div id="board"></div>
+  <button onclick="resetGame()">Reset Game</button>
+
+  <script>
+    const ROWS = 6;
+    const COLS = 7;
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+
+    let board = [];
+    let currentPlayer = 'red';
+    let gameOver = false;
+    const aiColor = 'yellow';
+
+    function createBoard() {
+      board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+      boardEl.innerHTML = '';
+
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          cell.addEventListener('click', () => handleMove(col));
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+
+    function handleMove(col) {
+      if (gameOver || currentPlayer !== 'red') return;
+
+      for (let row = ROWS - 1; row >= 0; row--) {
+        if (!board[row][col]) {
+          makeMove(row, col, 'red');
+          if (!gameOver) {
+            currentPlayer = 'yellow';
+            statusEl.textContent = "Yellow's Turn (AI)";
+            setTimeout(() => {
+              nextBestMove();
+            }, 500);
+          }
+          break;
+        }
+      }
+    }
+
+    function makeMove(row, col, player) {
+      board[row][col] = player;
+      const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+      cell.classList.add(player);
+
+      if (checkWin(board, row, col)) {
+        statusEl.textContent = `${capitalize(player)} Wins! 🎉`;
+        alert(statusEl.textContent);
+        gameOver = true;
+      } else if (board.flat().every(cell => cell)) {
+        statusEl.textContent = `It's a Draw!`;
+        gameOver = true;
+      } else {
+        currentPlayer = player === 'red' ? 'yellow' : 'red';
+        statusEl.textContent = `${capitalize(currentPlayer)}'s Turn`;
+      }
+    }
+
+    function checkWin(board, row, col) {
+      const directions = [
+        [0, 1], [1, 0], [1, 1], [1, -1]
+      ];
+
+      const player = board[row][col];
+
+      for (let [dx, dy] of directions) {
+        let count = 1;
+        count += countDiscs(board, row, col, dx, dy, player);
+        count += countDiscs(board, row, col, -dx, -dy, player);
+        if (count >= 4) return true;
+      }
+      return false;
+    }
+
+    function countDiscs(board, row, col, dx, dy, player) {
+      let r = row + dx;
+      let c = col + dy;
+      let count = 0;
+
+      while (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] === player) {
+        count++;
+        r += dx;
+        c += dy;
+      }
+
+      return count;
+    }
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function resetGame() {
+      currentPlayer = 'red';
+      gameOver = false;
+      statusEl.textContent = "Red's Turn";
+      createBoard();
+    }
+
+    function nextBestMove() {
+      if (gameOver) return;
+
+      let bestScore = -Infinity;
+      let bestMove = null;
+
+      for (let col = 0; col < COLS; col++) {
+        for (let row = ROWS - 1; row >= 0; row--) {
+          if (!board[row][col]) {
+            const mockBoard = board.map(r => [...r]);
+            mockBoard[row][col] = aiColor;
+            const score = minmax(mockBoard, 'red', 3, false); // depth of 3
+
+            if (score > bestScore) {
+              bestScore = score;
+              bestMove = { row, col };
+            }
+            console.log(score);
+            break;
+          }
+        }
+
+      }
+
+      if (bestMove) {
+        makeMove(bestMove.row, bestMove.col, aiColor);
+      }
+    }
+
+    function minmax(board, player, depth, isMaximizing) {
+      const opponent = player === 'red' ? 'yellow' : 'red';
+
+      if (depth === 0 || board.flat().every(cell => cell)) {
+        return 0;
+      }
+
+      if (isMaximizing) {
+        let bestScore = -Infinity;
+        for (let col = 0; col < COLS; col++) {
+          for (let row = ROWS - 1; row >= 0; row--) {
+            if (!board[row][col]) {
+              const newBoard = board.map(r => [...r]);
+              newBoard[row][col] = aiColor;
+              if (checkWin(newBoard, row, col)) return 100;
+              const score = minmax(newBoard, 'red', depth - 1, false);
+              bestScore = Math.max(bestScore, score);
+              break;
+            }
+          }
+        }
+        return bestScore;
+      } else {
+        let bestScore = Infinity;
+        for (let col = 0; col < COLS; col++) {
+          for (let row = ROWS - 1; row >= 0; row--) {
+            if (!board[row][col]) {
+              const newBoard = board.map(r => [...r]);
+              newBoard[row][col] = 'red';
+              if (checkWin(newBoard, row, col)) return -100;
+              const score = minmax(newBoard, aiColor, depth - 1, true);
+              bestScore = Math.min(bestScore, score);
+              break;
+            }
+          }
+        }
+        return bestScore;
+      }
+    }
+
+    createBoard();
+  </script>
+</body>
+</html>
