@@ -47,15 +47,15 @@
     .player2 .orb {
       background-color: cyan;
     }
-    #turnDisplay{
-        color: red;
-        font-size: large;
-        margin-top: 0;
-        padding-top: 0;
+    #turnDisplay {
+      color: red;
+      font-size: large;
+      margin-top: 0;
+      padding-top: 0;
     }
     title {
-        padding-bottom: 0;
-        margin-bottom: 0;
+      padding-bottom: 0;
+      margin-bottom: 0;
     }
     @keyframes pop {
       from { transform: scale(0.5); }
@@ -68,102 +68,167 @@
   <h2 id="turnDisplay">Red</h2>
   <div id="game-board"></div>
   <script>
-    const rows = 9;
-    const cols = 6;
-    const board = [];
-    const gameBoard = document.getElementById("game-board");
-    let currentPlayer = 1;
+    class Board {
+      constructor(){
+        this.rows = 9;
+        this.cols = 6;
+        this.board = [];
+        this.gameBoard = document.getElementById("game-board");
+        this.currentPlayer = 1;
 
-    function createBoard() {
-      for (let r = 0; r < rows; r++) {
-        board[r] = [];
-        for (let c = 0; c < cols; c++) {
-          const cell = document.createElement("div");
-          cell.classList.add("cell");
-          cell.dataset.row = r;
-          cell.dataset.col = c;
-          cell.dataset.owner = 0;
-          cell.dataset.count = 0;
-          cell.addEventListener("click", handleClick);
-          gameBoard.appendChild(cell);
-          board[r][c] = cell;
+        for (let r = 0; r < this.rows; r++) {
+          this.board[r] = [];
+          for (let c = 0; c < this.cols; c++) {
+            this.cell = document.createElement("div");
+            this.cell.classList.add("cell");
+            this.cell.dataset.row = r;
+            this.cell.dataset.col = c;
+            this.cell.dataset.owner = 0;
+            this.cell.dataset.count = 0;
+            this.cell.addEventListener("click", (e) => this.handleClick(e));
+            this.gameBoard.appendChild(this.cell);
+            this.board[r][c] = this.cell;
+          }
         }
       }
-    }
 
-    function handleClick(e) {
-      const cell = e.currentTarget;
-      const r = parseInt(cell.dataset.row);
-      const c = parseInt(cell.dataset.col);
-      const owner = parseInt(cell.dataset.owner);
+      handleClick(e) {
+        const cell = e.currentTarget;
+        const r = parseInt(cell.dataset.row);
+        const c = parseInt(cell.dataset.col);
+        const owner = parseInt(cell.dataset.owner);
 
-      if (owner !== 0 && owner !== currentPlayer) return;
+        if (owner !== 0 && owner !== this.currentPlayer) return;
 
-      addOrb(r, c, currentPlayer);
-      switchPlayer();
-    }
-
-    function addOrb(r, c, player) {
-      const cell = board[r][c];
-      let count = parseInt(cell.dataset.count);
-      cell.dataset.count = ++count;
-      cell.dataset.owner = player;
-      renderCell(cell, count, player);
-
-      const limit = getLimit(r, c);
-      if (count >= limit) {
-        explode(r, c, player);
+        this.addOrb(r, c, this.currentPlayer);
+        console.log(this.eval(this.getBoardValuesArray()));
+        this.switchPlayer();
       }
-    }
 
-    function explode(r, c, player) {
-      const cell = board[r][c];
-      cell.dataset.count = 0;
-      cell.dataset.owner = 0;
-      renderCell(cell, 0, 0);
+      addOrb(r, c, player) {
+        const cell = this.board[r][c];
+        let count = parseInt(cell.dataset.count);
+        cell.dataset.count = ++count;
+        cell.dataset.owner = player;
+        this.renderCell(cell, count, player);
 
-      const neighbors = [
-        [r - 1, c],
-        [r + 1, c],
-        [r, c - 1],
-        [r, c + 1]
-      ];
-
-      neighbors.forEach(([nr, nc]) => {
-        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
-          addOrb(nr, nc, player);
+        const limit = this.getLimit(r, c);
+        if (count >= limit) {
+          this.explode(r, c, player);
         }
-      });
-    }
+      }
 
-    function renderCell(cell, count, player) {
-      cell.innerHTML = "";
-      cell.classList.remove("player1", "player2");
-      if (player === 1) cell.classList.add("player1");
-      if (player === 2) cell.classList.add("player2");
-      for (let i = 0; i < count; i++) {
-        const orb = document.createElement("div");
-        orb.classList.add("orb");
-        cell.appendChild(orb);
+      explode(r, c, player) {
+        const cell = this.board[r][c];
+        cell.dataset.count = 0;
+        cell.dataset.owner = 0;
+        this.renderCell(cell, 0, 0);
+
+        const neighbors = [
+          [r - 1, c],
+          [r + 1, c],
+          [r, c - 1],
+          [r, c + 1]
+        ];
+
+        neighbors.forEach(([nr, nc]) => {
+          if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols) {
+            this.addOrb(nr, nc, player);
+          }
+        });
+      }
+
+      renderCell(cell, count, player) {
+        cell.innerHTML = "";
+        cell.classList.remove("player1", "player2");
+        if (player === 1) cell.classList.add("player1");
+        if (player === 2) cell.classList.add("player2");
+        for (let i = 0; i < count; i++) {
+          const orb = document.createElement("div");
+          orb.classList.add("orb");
+          cell.appendChild(orb);
+        }
+      }
+
+      getLimit(r, c) {
+        let limit = 4;
+        if (r === 0 || r === this.rows - 1) limit--;
+        if (c === 0 || c === this.cols - 1) limit--;
+        return limit;
+      }
+
+      switchPlayer() {
+        this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+        const trunDisp = document.getElementById('turnDisplay');
+        trunDisp.textContent = this.currentPlayer == 1 ? 'Blue' : 'Red';
+        trunDisp.style.color = this.currentPlayer == 1 ? 'cyan': 'red';
+      }
+
+      bestMove(board, depth, turn) {
+        console.log('running bestMove() at depth: ', depth);
+        if (depth > 5){
+            console.log('recursion limiter');
+            return this.eval(board);
+        }
+        if (depth == 0){
+            return this.eval(board);
+        }
+
+        let evals = []
+        for (let i = 0; i < this.rows; i++){
+          for (let j = 0; j < this.cols; j++){
+            evals.push(this.bestMove(this.imitBoard(board), depth-1, !turn));
+          }
+        }
+
+        console.log('evals');
+        evals.forEach(item => {
+          console.log(item);
+        });
+
+        if (turn) {
+          return Math.max(...evals);
+        } else {
+          return Math.min(...evals);
+        }
+      }
+
+      getBoardValuesArray() {
+        let values_array = [];
+
+        for (let i = 0; i < this.rows; i++) {
+            let subArr = [];
+            for (let j = 0; j < this.cols; j++) {
+                const cell = this.board[i][j];
+
+                if (cell.dataset.owner == 2) {
+                    subArr.push(parseInt(cell.dataset.count));
+                } else {
+                    if (parseInt(cell.dataset.count) == 0)
+                      subArr.push(parseInt(cell.dataset.count));
+                    else
+                      subArr.push(parseInt(cell.dataset.count) * -1);
+                }
+            }
+            values_array.push(subArr);
+        }
+        return values_array;
+      }
+
+      eval(boardValuesArray){
+        // eval based on number of orbs gained.
+        let sum = 0;
+        for(let i = 0; i < this.rows; i++){
+            for(let j = 0; j < this.cols; j++){
+                sum += boardValuesArray[i][j];
+            }
+        }
+        return sum;
       }
     }
-
-    function getLimit(r, c) {
-      let limit = 4;
-      if (r === 0 || r === rows - 1) limit--;
-      if (c === 0 || c === cols - 1) limit--;
-      return limit;
-    }
-
-    function switchPlayer() {
-      currentPlayer = currentPlayer === 1 ? 2 : 1;
-      const trunDisp = document.getElementById('turnDisplay');
-      trunDisp.textContent = currentPlayer == 1 ? 'Red' : 'Blue';
-      trunDisp.style.color = currentPlayer == 1 ? 'red': 'cyan';
-
-    }
-
-    createBoard();
+    
+      
+    const gameBoard = new Board();
   </script>
 </body>
 </html>
